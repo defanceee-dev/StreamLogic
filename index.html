@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamPartner AI — Twitch Growth</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            twitch: '#9146FF',
+            neon: '#8BFFB7',
+            darkbg: '#0B0B12',
+            card: '#12121C'
+          },
+          boxShadow: {
+            neon: '0 0 20px rgba(145, 70, 255, 0.45), 0 0 50px rgba(139, 255, 183, 0.12)',
+            soft: '0 20px 60px rgba(0,0,0,0.35)'
+          },
+          keyframes: {
+            floaty: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' }
+            },
+            fadeUp: {
+              '0%': { opacity: 0, transform: 'translateY(30px)' },
+              '100%': { opacity: 1, transform: 'translateY(0)' }
+            }
+          },
+          animation: {
+            floaty: 'floaty 5s ease-in-out infinite',
+            fadeUp: 'fadeUp 0.8s ease forwards'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(145,70,255,0.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(139,255,183,0.10), transparent 22%),
+        linear-gradient(180deg, #0b0b12 0%, #090910 100%);
+      overflow-x: hidden;
+    }
+    .glass {
+      backdrop-filter: blur(14px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .premium-card {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .premium-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(145,70,255,0.65), rgba(139,255,183,0.18), rgba(255,255,255,0.08));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .premium-glow::after {
+      content: '';
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -80px;
+      top: -80px;
+      background: radial-gradient(circle, rgba(145,70,255,0.28), transparent 65%);
+      filter: blur(10px);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .parallax-orb {
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(42px);
+      will-change: transform;
+      pointer-events: none;
+    }
+    .neon-grid {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.45), transparent 85%);
+    }
+    .shine-btn {
+      position: relative;
+      overflow: hidden;
+    }
+    .shine-btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 70%;
+      height: 100%;
+      transform: skewX(-20deg);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+      transition: left 0.7s ease;
+    }
+    .shine-btn:hover::after { left: 140%; }
+    .modal-open { overflow: hidden; }
+    .modal-backdrop {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-panel {
+      opacity: 0;
+      transform: translateY(20px) scale(0.98);
+      transition: all 0.3s ease;
+    }
+    .modal-backdrop.active .modal-panel {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #9146FF, #8BFFB7);
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #fff;
+      border: 3px solid #9146FF;
+      box-shadow: 0 0 18px rgba(145, 70, 255, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #fff;
+      border: 3px solid #9146FF;
+      box-shadow: 0 0 18px rgba(145, 70, 255, 0.65);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="text-white selection:bg-twitch/40">
+  <header class="sticky top-0 z-50 border-b border-white/5 bg-black/30 backdrop-blur-xl">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
+      <div class="flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-twitch/15 shadow-neon ring-1 ring-twitch/30">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-twitch">
+            <path d="M5 3h14v10l-4 4h-4l-2 2H7v-2H5V3Zm2 2v10h3v2l2-2h4l3-3V5H7Zm4 2h2v4h-2V7Zm5 0h-2v4h2V7Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-[0.35em] text-white/45">Twitch Growth</p>
+          <h1 class="text-lg font-semibold">StreamPartner AI</h1>
+        </div>
+      </div>
+
+      <nav class="hidden items-center gap-8 md:flex">
+        <a href="#pricing" class="text-sm text-white/70 transition hover:text-white">Тарифы</a>
+        <a href="#calculator" class="text-sm text-white/70 transition hover:text-white">AI-калькулятор</a>
+      </nav>
+
+      <button id="openLoginModal" class="shine-btn rounded-2xl border border-twitch/30 bg-twitch px-5 py-2.5 text-sm font-semibold shadow-neon transition hover:scale-[1.03] hover:bg-[#a25cff] active:scale-[0.98]">
+        Личный кабинет
+      </button>
+    </div>
+  </header>
+
+  <section class="relative overflow-hidden">
+    <div class="neon-grid absolute inset-0 opacity-40"></div>
+    <div class="parallax-orb bg-twitch/25 h-72 w-72 left-[6%] top-24" data-speed="0.09"></div>
+    <div class="parallax-orb bg-neon/15 h-80 w-80 right-[8%] top-32" data-speed="0.05"></div>
+    <div class="parallax-orb bg-fuchsia-400/10 h-64 w-64 left-[38%] top-[14%]" data-speed="0.03"></div>
+
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="absolute left-[8%] top-24 h-56 w-56 rounded-full bg-twitch/20 blur-3xl"></div>
+      <div class="absolute right-[10%] top-32 h-64 w-64 rounded-full bg-neon/10 blur-3xl"></div>
+    </div>
+
+    <div class="relative mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-8 lg:py-28">
+      <div class="reveal">
+        <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+          <span class="h-2 w-2 rounded-full bg-neon shadow-[0_0_14px_rgba(139,255,183,0.9)]"></span>
+          AI-инструменты для роста стримера
+        </div>
+
+        <h2 class="max-w-3xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+          Твой путь к
+          <span class="bg-gradient-to-r from-twitch via-white to-neon bg-clip-text text-transparent"> Партнеру Twitch</span>
+        </h2>
+
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-white/70">
+          Ускоряй рост канала, отслеживай динамику, тестируй гипотезы и получай понятный план развития на базе AI-аналитики.
+        </p>
+
+        <form id="channelForm" class="mt-10 flex flex-col gap-4 sm:flex-row">
+          <div class="glass flex-1 rounded-2xl p-1 shadow-soft">
+            <input
+              id="channelUrl"
+              type="url"
+              placeholder="Вставь ссылку на Twitch-канал"
+              class="w-full rounded-xl bg-transparent px-5 py-4 text-white outline-none placeholder:text-white/35"
+            />
+          </div>
+          <button
+            id="analyzeBtn"
+            type="submit"
+            class="rounded-2xl bg-twitch px-7 py-4 font-semibold shadow-neon transition hover:-translate-y-0.5 hover:bg-[#a25cff] active:translate-y-0"
+          >
+            Анализировать
+          </button>
+        </form>
+
+        <div class="mt-8 flex flex-wrap gap-6 text-sm text-white/55">
+          <div>⚡ Быстрый аудит канала</div>
+          <div>📈 Прогноз роста</div>
+          <div>🤖 AI-рекомендации</div>
+        </div>
+
+        <div class="mt-10 grid gap-4 sm:grid-cols-3">
+          <div class="rounded-2xl border border-white/8 bg-white/5 p-4 text-center">
+            <p class="text-2xl font-black stat-number" data-target="1200">0</p>
+            <p class="mt-1 text-sm text-white/45">Проанализированных каналов</p>
+          </div>
+          <div class="rounded-2xl border border-white/8 bg-white/5 p-4 text-center">
+            <p class="text-2xl font-black stat-number" data-target="87">0</p>
+            <p class="mt-1 text-sm text-white/45">Средний рост вовлечения</p>
+          </div>
+          <div class="rounded-2xl border border-white/8 bg-white/5 p-4 text-center">
+            <p class="text-2xl font-black stat-number" data-target="43">0</p>
+            <p class="mt-1 text-sm text-white/45">Каналов дошли до Affiliate+</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal lg:justify-self-end">
+        <div class="glass premium-card premium-glow relative overflow-hidden rounded-[28px] p-6 shadow-neon animate-floaty">
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neon/70 to-transparent"></div>
+          <div class="mb-6 flex items-center justify-between">
+            <div>
+              <p class="text-sm text-white/45">Прогноз за 30 дней</p>
+              <h3 class="mt-1 text-2xl font-bold">+37% к вовлечению</h3>
+            </div>
+            <div class="rounded-2xl bg-neon/10 px-4 py-2 text-sm font-semibold text-neon">AI Boost</div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/5">
+              <div class="mb-2 flex items-center justify-between text-sm">
+                <span class="text-white/60">Активность чата</span>
+                <span class="font-semibold">84%</span>
+              </div>
+              <div class="h-3 rounded-full bg-white/5">
+                <div class="h-3 w-[84%] rounded-full bg-gradient-to-r from-twitch to-neon"></div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl bg-white/5 p-4 ring-1 ring-white/5">
+              <div class="mb-2 flex items-center justify-between text-sm">
+                <span class="text-white/60">Конверсия в фолловеров</span>
+                <span class="font-semibold">61%</span>
+              </div>
+              <div class="h-3 rounded-full bg-white/5">
+                <div class="h-3 w-[61%] rounded-full bg-gradient-to-r from-twitch to-neon"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+              <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+                <p class="text-sm text-white/45">Средний онлайн</p>
+                <p class="mt-2 text-2xl font-bold">128</p>
+              </div>
+              <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+                <p class="text-sm text-white/45">Рост подписок</p>
+                <p class="mt-2 text-2xl font-bold">+246</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-sm text-white/45">Активных клиентов</p>
+        <p class="mt-2 text-3xl font-black">1,284</p>
+        <p class="mt-2 text-sm text-neon">+12.4% за месяц</p>
+      </div>
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-sm text-white/45">Средний рост онлайна</p>
+        <p class="mt-2 text-3xl font-black">+37%</p>
+        <p class="mt-2 text-sm text-neon">по данным за 30 дней</p>
+      </div>
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-sm text-white/45">AI-сценариев в день</p>
+        <p class="mt-2 text-3xl font-black">9,700</p>
+        <p class="mt-2 text-sm text-neon">анализ, контент, CTA</p>
+      </div>
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-sm text-white/45">Удержание аудитории</p>
+        <p class="mt-2 text-3xl font-black">82%</p>
+        <p class="mt-2 text-sm text-neon">после внедрения рекомендаций</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" class="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
+    <div class="reveal text-center">
+      <p class="text-sm uppercase tracking-[0.35em] text-twitch/80">Тарифы</p>
+      <h2 class="mt-4 text-3xl font-black sm:text-4xl">Выбери темп своего роста</h2>
+      <p class="mx-auto mt-4 max-w-2xl text-white/65">
+        От старта до масштабирования — гибкие пакеты под любой этап развития стримера.
+      </p>
+    </div>
+
+    <div class="mt-12 grid gap-6 lg:grid-cols-3">
+      <article class="reveal glass premium-card rounded-[28px] p-7 shadow-soft transition duration-300 hover:-translate-y-2 hover:shadow-neon">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm uppercase tracking-[0.3em] text-white/40">Startup</p>
+            <h3 class="mt-3 text-3xl font-bold">$29</h3>
+          </div>
+          <span class="rounded-full bg-white/5 px-3 py-1 text-xs text-white/60">Старт</span>
+        </div>
+        <ul class="mt-8 space-y-4 text-white/70">
+          <li>• Базовый аудит канала</li>
+          <li>• 3 AI-рекомендации в неделю</li>
+          <li>• Анализ заголовков и описаний</li>
+        </ul>
+        <button class="mt-10 w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 font-semibold transition hover:border-twitch/40 hover:bg-twitch hover:shadow-neon">
+          Заказать
+        </button>
+      </article>
+
+      <article class="reveal relative rounded-[30px] border border-twitch/35 bg-gradient-to-b from-twitch/20 to-white/[0.03] p-7 shadow-neon transition duration-300 hover:-translate-y-2">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-neon/30 bg-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-neon">
+          Хит
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm uppercase tracking-[0.3em] text-white/40">Evolution</p>
+            <h3 class="mt-3 text-3xl font-bold">$79</h3>
+          </div>
+          <span class="rounded-full bg-twitch/20 px-3 py-1 text-xs text-white/75">Рост</span>
+        </div>
+        <ul class="mt-8 space-y-4 text-white/75">
+          <li>• Всё из Startup</li>
+          <li>• AI-контент план на 30 дней</li>
+          <li>• Оптимизация вовлечения и CTA</li>
+          <li>• Еженедельный growth-отчёт</li>
+        </ul>
+        <button class="mt-10 w-full rounded-2xl bg-twitch px-5 py-3.5 font-semibold shadow-neon transition hover:bg-[#a25cff]">
+          Заказать
+        </button>
+      </article>
+
+      <article class="reveal glass premium-card rounded-[28px] p-7 shadow-soft transition duration-300 hover:-translate-y-2 hover:shadow-neon">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm uppercase tracking-[0.3em] text-white/40">Pro</p>
+            <h3 class="mt-3 text-3xl font-bold">$149</h3>
+          </div>
+          <span class="rounded-full bg-neon/10 px-3 py-1 text-xs text-neon">Scale</span>
+        </div>
+        <ul class="mt-8 space-y-4 text-white/70">
+          <li>• Всё из Evolution</li>
+          <li>• Глубокая AI-аналитика стримов</li>
+          <li>• Персональная стратегия до Partner</li>
+          <li>• Приоритетная поддержка</li>
+        </ul>
+        <button class="mt-10 w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 font-semibold transition hover:border-twitch/40 hover:bg-twitch hover:shadow-neon">
+          Заказать
+        </button>
+      </article>
+    </div>
+  </section>
+
+  <section id="calculator" class="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
+    <div class="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+      <div class="reveal">
+        <p class="text-sm uppercase tracking-[0.35em] text-twitch/80">AI-калькулятор роста</p>
+        <h2 class="mt-4 text-3xl font-black sm:text-4xl">Посчитай свой потенциал за минуту</h2>
+        <p class="mt-4 max-w-xl text-white/65">
+          Настрой показатели канала и получи примерный прогноз роста по онлайну, вовлечению и шансам выйти к требованиям партнёрки.
+        </p>
+      </div>
+
+      <div class="reveal glass premium-card premium-glow rounded-[30px] p-6 shadow-neon sm:p-8">
+        <div class="space-y-7">
+          <div>
+            <div class="mb-3 flex items-center justify-between text-sm">
+              <label class="text-white/70">Текущий средний онлайн</label>
+              <span id="avgViewersValue" class="font-semibold text-neon">25</span>
+            </div>
+            <input id="avgViewers" type="range" min="1" max="500" value="25" />
+          </div>
+
+          <div>
+            <div class="mb-3 flex items-center justify-between text-sm">
+              <label class="text-white/70">Стримов в неделю</label>
+              <span id="streamsPerWeekValue" class="font-semibold text-neon">4</span>
+            </div>
+            <input id="streamsPerWeek" type="range" min="1" max="14" value="4" />
+          </div>
+
+          <div>
+            <div class="mb-3 flex items-center justify-between text-sm">
+              <label class="text-white/70">Активность чата (%)</label>
+              <span id="chatActivityValue" class="font-semibold text-neon">55</span>
+            </div>
+            <input id="chatActivity" type="range" min="0" max="100" value="55" />
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+              <p class="text-sm text-white/45">Прогноз онлайна</p>
+              <p id="forecastViewers" class="mt-2 text-2xl font-bold">42</p>
+            </div>
+            <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+              <p class="text-sm text-white/45">Рост вовлечения</p>
+              <p id="engagementGrowth" class="mt-2 text-2xl font-bold">+18%</p>
+            </div>
+            <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+              <p class="text-sm text-white/45">Шанс на Partner</p>
+              <p id="partnerChance" class="mt-2 text-2xl font-bold">34%</p>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-twitch/20 bg-twitch/10 p-5 text-sm leading-7 text-white/75">
+            <span class="font-semibold text-white">AI-подсказка:</span>
+            <span id="aiTip">увеличь частоту эфиров минимум до 5 в неделю и добавь более сильные CTA в начале стрима.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
+    <div class="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+      <div class="reveal">
+        <p class="text-sm uppercase tracking-[0.35em] text-twitch/80">Dashboard preview</p>
+        <h2 class="mt-4 text-3xl font-black sm:text-4xl">Вся аналитика канала в одном интерфейсе</h2>
+        <p class="mt-4 max-w-xl text-white/65">Следи за онлайном, удержанием, активностью чата, конверсией в фолловеры и AI-подсказками из одного кабинета. Интерфейс заточен под быстрые решения во время и между стримами.</p>
+
+        <div class="mt-8 space-y-4">
+          <div class="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/5 p-4">
+            <div class="mt-1 h-2.5 w-2.5 rounded-full bg-neon shadow-[0_0_14px_rgba(139,255,183,0.9)]"></div>
+            <div>
+              <h3 class="font-semibold">Прогнозы и алерты</h3>
+              <p class="mt-1 text-sm text-white/60">Система предупреждает о просадках и рекомендует действия до того, как метрики начнут падать сильнее.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/5 p-4">
+            <div class="mt-1 h-2.5 w-2.5 rounded-full bg-twitch shadow-[0_0_14px_rgba(145,70,255,0.9)]"></div>
+            <div>
+              <h3 class="font-semibold">Решения на базе AI</h3>
+              <p class="mt-1 text-sm text-white/60">Автоматические рекомендации по названию стрима, длительности, интерактивам и структуре эфира.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/5 p-4">
+            <div class="mt-1 h-2.5 w-2.5 rounded-full bg-fuchsia-400 shadow-[0_0_14px_rgba(232,121,249,0.9)]"></div>
+            <div>
+              <h3 class="font-semibold">Командный формат</h3>
+              <p class="mt-1 text-sm text-white/60">Подходит для стримера, менеджера и редактора контента — все ключевые сигналы в одном месте.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal glass premium-card premium-glow rounded-[32px] p-5 shadow-neon lg:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/8 pb-4">
+          <div>
+            <p class="text-sm text-white/45">Preview кабинета</p>
+            <h3 class="text-xl font-bold">Channel Growth Dashboard</h3>
+          </div>
+          <div class="flex gap-2">
+            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">Live</span>
+            <span class="rounded-full border border-neon/20 bg-neon/10 px-3 py-1 text-xs text-neon">AI Active</span>
+          </div>
+        </div>
+
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+          <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+            <p class="text-sm text-white/45">Средний онлайн</p>
+            <p id="dashAvgOnline" class="mt-2 text-2xl font-bold">132</p>
+          </div>
+          <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+            <p class="text-sm text-white/45">Удержание</p>
+            <p id="dashRetention" class="mt-2 text-2xl font-bold">68%</p>
+          </div>
+          <div class="rounded-2xl bg-black/30 p-4 ring-1 ring-white/5">
+            <p class="text-sm text-white/45">CTR заголовков</p>
+            <p id="dashCtr" class="mt-2 text-2xl font-bold">7.4%</p>
+          </div>
+        </div>
+
+        <div class="mt-4 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <p class="text-sm text-white/45">Динамика роста</p>
+              <h4 class="font-semibold">Последние 7 дней</h4>
+            </div>
+            <span class="text-sm text-neon">+18.2%</span>
+          </div>
+          <div class="flex h-40 items-end gap-2">
+            <div class="w-full rounded-t-2xl bg-white/10" style="height: 34%"></div>
+            <div class="w-full rounded-t-2xl bg-white/10" style="height: 48%"></div>
+            <div class="w-full rounded-t-2xl bg-white/10" style="height: 42%"></div>
+            <div class="w-full rounded-t-2xl bg-twitch/70 shadow-[0_0_22px_rgba(145,70,255,0.35)]" style="height: 67%"></div>
+            <div class="w-full rounded-t-2xl bg-twitch/80 shadow-[0_0_22px_rgba(145,70,255,0.35)]" style="height: 72%"></div>
+            <div class="w-full rounded-t-2xl bg-neon/70 shadow-[0_0_22px_rgba(139,255,183,0.22)]" style="height: 83%"></div>
+            <div class="w-full rounded-t-2xl bg-neon shadow-[0_0_22px_rgba(139,255,183,0.28)]" style="height: 92%"></div>
+          </div>
+        </div>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-[1fr_0.9fr]">
+          <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p class="text-sm text-white/45">AI-инсайт дня</p>
+            <p id="dashboardInsight" class="mt-2 text-sm leading-7 text-white/75">Лучшее окно для роста — первые 18 минут стрима. Добавь сильный интро-хук и ранний интерактив, чтобы поднять удержание.</p>
+          </div>
+          <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p class="text-sm text-white/45">Ближайшая цель</p>
+            <p class="mt-2 text-lg font-semibold">150 среднего онлайна</p>
+            <div class="mt-3 h-3 rounded-full bg-white/8">
+              <div class="h-3 w-[74%] rounded-full bg-gradient-to-r from-twitch to-neon"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
+    <div class="reveal text-center">
+      <p class="text-sm uppercase tracking-[0.35em] text-twitch/80">Интеграции</p>
+      <h2 class="mt-4 text-3xl font-black sm:text-4xl">Подключай любимые инструменты</h2>
+      <p class="mx-auto mt-4 max-w-2xl text-white/65">Платформа легко встраивается в существующий стек стримера и команды: аналитика, уведомления, CRM и автоматизация.</p>
+    </div>
+
+    <div class="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-lg font-semibold">Twitch</p>
+        <p class="mt-2 text-sm text-white/60">Импорт метрик канала, категорий, названий стримов и базовой статистики.</p>
+      </div>
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-lg font-semibold">Discord</p>
+        <p class="mt-2 text-sm text-white/60">Оповещения о росте, просадках, новых рекомендациях и AI-отчётах прямо в сервер.</p>
+      </div>
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-lg font-semibold">Telegram</p>
+        <p class="mt-2 text-sm text-white/60">Лиды, уведомления и быстрые отчёты в боте или личных сообщениях.</p>
+      </div>
+      <div class="reveal glass premium-card rounded-[24px] p-5 shadow-soft">
+        <p class="text-lg font-semibold">OBS / Webhooks</p>
+        <p class="mt-2 text-sm text-white/60">Интеграция для автоматизаций, триггеров, статусов и кастомных сценариев.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
+    <div class="reveal text-center">
+      <p class="text-sm uppercase tracking-[0.35em] text-twitch/80">Отзывы</p>
+      <h2 class="mt-4 text-3xl font-black sm:text-4xl">Что говорят стримеры</h2>
+    </div>
+
+    <div class="mt-12 grid gap-6 lg:grid-cols-3">
+      <article class="reveal glass premium-card rounded-[28px] p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-neon">
+        <p class="text-white/75">“После переработки расписания и CTA я поднял средний онлайн почти в 2 раза за месяц. Самое ценное — понятный план без воды.”</p>
+        <div class="mt-6">
+          <h3 class="font-semibold">Максим, Just Chatting</h3>
+          <p class="text-sm text-white/45">с 18 до 34 среднего онлайна</p>
+        </div>
+      </article>
+
+      <article class="reveal glass premium-card rounded-[28px] p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-neon">
+        <p class="text-white/75">“AI-калькулятор помог понять, где я теряю рост. Вовлечение чата реально изменилось после внедрения рекомендаций.”</p>
+        <div class="mt-6">
+          <h3 class="font-semibold">Артём, GTA RP</h3>
+          <p class="text-sm text-white/45">+61% к активности чата</p>
+        </div>
+      </article>
+
+      <article class="reveal glass premium-card rounded-[28px] p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-neon">
+        <p class="text-white/75">“Больше не гадаю, что делать дальше с каналом. Получил чёткий roadmap и стал стабильнее расти по фолловерам.”</p>
+        <div class="mt-6">
+          <h3 class="font-semibold">Илья, Valorant</h3>
+          <p class="text-sm text-white/45">+240 новых подписчиков за 30 дней</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 py-14 lg:px-8 lg:py-20">
+    <div class="reveal text-center">
+      <p class="text-sm uppercase tracking-[0.35em] text-twitch/80">FAQ</p>
+      <h2 class="mt-4 text-3xl font-black sm:text-4xl">Частые вопросы</h2>
+    </div>
+
+    <div class="mt-12 space-y-4">
+      <details class="reveal glass rounded-2xl p-5 group">
+        <summary class="cursor-pointer list-none font-semibold">Это накрутка или легальный рост?</summary>
+        <p class="mt-3 text-white/65">Нет, сервис фокусируется на аналитике, контент-стратегии, удержании аудитории и оптимизации канала. Это инструмент для органического роста.</p>
+      </details>
+
+      <details class="reveal glass rounded-2xl p-5 group">
+        <summary class="cursor-pointer list-none font-semibold">Нужно ли давать доступ к аккаунту Twitch?</summary>
+        <p class="mt-3 text-white/65">Для базового анализа достаточно ссылки на канал. Расширенные функции можно подключать через безопасную авторизацию отдельно.</p>
+      </details>
+
+      <details class="reveal glass rounded-2xl p-5 group">
+        <summary class="cursor-pointer list-none font-semibold">Подходит ли это маленьким каналам?</summary>
+        <p class="mt-3 text-white/65">Да. Особенно полезно для каналов на ранней стадии, где каждое изменение в расписании, форматах и вовлечении даёт заметный эффект.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 pb-16 lg:px-8 lg:pb-24">
+    <div class="reveal premium-card overflow-hidden rounded-[32px] border border-twitch/20 bg-gradient-to-r from-twitch/20 via-white/[0.03] to-neon/10 p-8 shadow-neon lg:p-10">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-sm uppercase tracking-[0.35em] text-white/50">Готов к росту?</p>
+          <h2 class="mt-3 text-3xl font-black sm:text-4xl">Запусти анализ канала уже сегодня</h2>
+          <p class="mt-3 max-w-2xl text-white/65">Оставь ссылку на Twitch-канал и получи первый AI-разбор, чтобы увидеть точки роста и ближайшие шаги к Partner.</p>
+        </div>
+        <a href="#hero" class="inline-flex items-center justify-center rounded-2xl bg-twitch px-7 py-4 font-semibold shadow-neon transition hover:bg-[#a25cff]">Начать сейчас</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-white/5 px-6 py-8 text-center text-sm text-white/40 lg:px-8">
+    © 2026 StreamPartner AI — рост стримеров нового поколения
+  </footer>
+
+  <div id="loginModal" class="modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-md">
+    <div class="modal-panel glass premium-card w-full max-w-md rounded-[28px] p-6 shadow-neon sm:p-7">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-sm uppercase tracking-[0.3em] text-white/40">Личный кабинет</p>
+          <h3 class="mt-2 text-2xl font-bold">Вход в аккаунт</h3>
+        </div>
+        <button id="closeLoginModal" class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/10">✕</button>
+      </div>
+
+      <form id="loginForm" class="mt-6 space-y-4">
+        <div>
+          <label class="mb-2 block text-sm text-white/65">Email</label>
+          <input type="email" placeholder="demo@streamlogic.local" class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-white outline-none transition focus:border-twitch/50 focus:ring-2 focus:ring-twitch/25" />
+        </div>
+        <div>
+          <label class="mb-2 block text-sm text-white/65">Пароль</label>
+          <input type="password" placeholder="12345678" class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3.5 text-white outline-none transition focus:border-twitch/50 focus:ring-2 focus:ring-twitch/25" />
+        </div>
+
+        <div class="flex items-center justify-between gap-3 text-sm">
+          <label class="flex items-center gap-2 text-white/60">
+            <input type="checkbox" class="accent-[#9146FF]" />
+            Запомнить меня
+          </label>
+          <a href="#" class="text-twitch transition hover:text-white">Забыли пароль?</a>
+        </div>
+
+        <button type="submit" class="shine-btn w-full rounded-2xl bg-twitch px-5 py-3.5 font-semibold shadow-neon transition hover:bg-[#a25cff]">Войти</button>
+        <button id="twitchLoginBtn" type="button" class="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 font-semibold text-white/80 transition hover:bg-white/10">Войти через Twitch</button>
+      </form>
+
+      <p class="mt-5 text-center text-sm text-white/45">Нет аккаунта? <a href="#" class="text-neon transition hover:text-white">Создать профиль</a></p>
+    </div>
+  </div>
+
+  <script>
+    const FORM_ENDPOINT = 'https://streamlogic-backend.onrender.com/api/leads';
+    const LOGIN_ENDPOINT = 'https://streamlogic-backend.onrender.com/api/auth/login';
+    const TWITCH_AUTH_URL = 'https://streamlogic-backend.onrender.com/auth/twitch';
+    const DASHBOARD_ENDPOINT = 'https://streamlogic-backend.onrender.com/api/dashboard/preview';
+
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(el => observer.observe(el));
+
+    const statNumbers = document.querySelectorAll('.stat-number');
+    const animateStats = () => {
+      statNumbers.forEach(el => {
+        const target = Number(el.dataset.target || 0);
+        let current = 0;
+        const increment = Math.max(1, Math.ceil(target / 60));
+        const tick = () => {
+          current += increment;
+          if (current >= target) {
+            el.textContent = target + (target === 87 || target === 43 ? '%' : '+');
+            return;
+          }
+          el.textContent = current;
+          requestAnimationFrame(tick);
+        };
+        tick();
+      });
+    };
+
+    const statsBlock = document.querySelector('.stat-number');
+    if (statsBlock) {
+      const statsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            animateStats();
+            statsObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.4 });
+      statsObserver.observe(statsBlock);
+    }
+
+    const avgViewers = document.getElementById('avgViewers');
+    const streamsPerWeek = document.getElementById('streamsPerWeek');
+    const chatActivity = document.getElementById('chatActivity');
+    const avgViewersValue = document.getElementById('avgViewersValue');
+    const streamsPerWeekValue = document.getElementById('streamsPerWeekValue');
+    const chatActivityValue = document.getElementById('chatActivityValue');
+    const forecastViewers = document.getElementById('forecastViewers');
+    const engagementGrowth = document.getElementById('engagementGrowth');
+    const partnerChance = document.getElementById('partnerChance');
+    const aiTip = document.getElementById('aiTip');
+
+    function calculateGrowth() {
+      const viewers = Number(avgViewers.value);
+      const streams = Number(streamsPerWeek.value);
+      const chat = Number(chatActivity.value);
+
+      avgViewersValue.textContent = viewers;
+      streamsPerWeekValue.textContent = streams;
+      chatActivityValue.textContent = chat;
+
+      const growthFactor = 1 + (streams * 0.06) + (chat * 0.0035);
+      const predicted = Math.round(viewers * growthFactor);
+      const engagement = Math.min(95, Math.round(chat * 0.28 + streams * 4));
+      const chance = Math.min(99, Math.round((predicted / 75) * 35 + chat * 0.35 + streams * 2));
+
+      forecastViewers.textContent = predicted;
+      engagementGrowth.textContent = `+${engagement}%`;
+      partnerChance.textContent = `${chance}%`;
+
+      if (streams < 3) {
+        aiTip.textContent = 'Самая быстрая точка роста сейчас — увеличить регулярность эфиров. Даже +1–2 стрима в неделю заметно улучшают прогноз.';
+      } else if (chat < 40) {
+        aiTip.textContent = 'У тебя есть запас в вовлечении: добавь интерактивы, опросы и понятные поводы писать в чат каждые 10–15 минут.';
+      } else if (viewers < 50) {
+        aiTip.textContent = 'Контент уже выглядит перспективно — следующий шаг: улучшить кликабельность названий, обложек и усилить внешнее привлечение аудитории.';
+      } else {
+        aiTip.textContent = 'У канала сильная база. Фокусируйся на удержании, сегментации контента и стабильном расписании — это лучший путь к Partner.';
+      }
+    }
+    [avgViewers, streamsPerWeek, chatActivity].forEach(input => input.addEventListener('input', calculateGrowth));
+    calculateGrowth();
+
+    const form = document.getElementById('channelForm');
+    const channelUrl = document.getElementById('channelUrl');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const openLoginModal = document.getElementById('openLoginModal');
+    const closeLoginModal = document.getElementById('closeLoginModal');
+    const loginModal = document.getElementById('loginModal');
+    const loginForm = document.getElementById('loginForm');
+    const twitchLoginBtn = document.getElementById('twitchLoginBtn');
+
+    const openModal = () => {
+      loginModal.classList.add('active');
+      document.body.classList.add('modal-open');
+    };
+
+    const closeModal = () => {
+      loginModal.classList.remove('active');
+      document.body.classList.remove('modal-open');
+    };
+
+    openLoginModal?.addEventListener('click', openModal);
+    closeLoginModal?.addEventListener('click', closeModal);
+    loginModal?.addEventListener('click', (e) => {
+      if (e.target === loginModal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    loginForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = loginForm.querySelector('button[type="submit"]');
+      const original = submitBtn.textContent;
+      const emailInput = loginForm.querySelector('input[type="email"]');
+      const passwordInput = loginForm.querySelector('input[type="password"]');
+
+      submitBtn.textContent = 'Вход...';
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch(LOGIN_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailInput?.value?.trim() || '',
+            password: passwordInput?.value || ''
+          })
+        });
+
+        if (!response.ok) throw new Error('login_failed');
+
+        submitBtn.textContent = 'Успешно';
+        setTimeout(() => {
+          submitBtn.textContent = original;
+          submitBtn.disabled = false;
+          closeModal();
+        }, 900);
+      } catch (error) {
+        submitBtn.textContent = 'Ошибка входа';
+        setTimeout(() => {
+          submitBtn.textContent = original;
+          submitBtn.disabled = false;
+        }, 1400);
+      }
+    });
+
+    twitchLoginBtn?.addEventListener('click', () => {
+      window.location.href = TWITCH_AUTH_URL;
+    });
+
+    const orbs = document.querySelectorAll('.parallax-orb');
+    window.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth) - 0.5;
+      const y = (e.clientY / window.innerHeight) - 0.5;
+      orbs.forEach((orb) => {
+        const speed = Number(orb.dataset.speed || 0.05);
+        const moveX = x * 100 * speed;
+        const moveY = y * 100 * speed;
+        orb.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`;
+      });
+    });
+
+    const dashAvgOnline = document.getElementById('dashAvgOnline');
+    const dashRetention = document.getElementById('dashRetention');
+    const dashCtr = document.getElementById('dashCtr');
+    const dashboardInsight = document.getElementById('dashboardInsight');
+
+    async function loadDashboardPreview() {
+      try {
+        const response = await fetch(DASHBOARD_ENDPOINT, { method: 'GET' });
+        if (!response.ok) throw new Error('dashboard_failed');
+        const data = await response.json();
+
+        if (typeof data.avgOnline !== 'undefined') dashAvgOnline.textContent = data.avgOnline;
+        if (typeof data.retention !== 'undefined') dashRetention.textContent = `${data.retention}%`;
+        if (typeof data.ctr !== 'undefined') dashCtr.textContent = `${data.ctr}%`;
+        if (typeof data.insight !== 'undefined') dashboardInsight.textContent = data.insight;
+      } catch (error) {
+        console.warn('Dashboard preview load failed');
+      }
+    }
+    loadDashboardPreview();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const value = channelUrl.value.trim();
+
+      if (!value) {
+        analyzeBtn.textContent = 'Вставь ссылку';
+        setTimeout(() => analyzeBtn.textContent = 'Анализировать', 1500);
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = 'Отправка...';
+
+      try {
+        await fetch(FORM_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelUrl: value, createdAt: new Date().toISOString() })
+        });
+
+        analyzeBtn.textContent = 'Заявка отправлена';
+        form.reset();
+      } catch (err) {
+        analyzeBtn.textContent = 'Ошибка отправки';
+      } finally {
+        setTimeout(() => {
+          analyzeBtn.disabled = false;
+          analyzeBtn.textContent = 'Анализировать';
+        }, 1800);
+      }
+    });
+  </script>
+</body>
+</html>
