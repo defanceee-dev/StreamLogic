@@ -1,0 +1,39 @@
+1) Скопируй все новые файлы внутрянки рядом с index.html.
+
+2) В index_updated.html после успешного логина/регистрации добавь редирект в кабинет.
+
+Найди блок:
+
+        setTimeout(() => {
+          submitBtn.textContent = original;
+          submitBtn.disabled = false;
+          loginForm.reset();
+          setAuthMode('login');
+          closeModal();
+        }, 900);
+
+Замени на:
+
+        setTimeout(() => {
+          submitBtn.textContent = original;
+          submitBtn.disabled = false;
+          loginForm.reset();
+          setAuthMode('login');
+          closeModal();
+          window.location.href = './dashboard.html';
+        }, 900);
+
+3) Если хочешь, чтобы кнопка "Личный кабинет" сразу открывала dashboard для уже авторизованного пользователя, добавь перед openModal() такую проверку:
+
+    openLoginModal?.addEventListener('click', () => {
+      const token = localStorage.getItem('streamlogic_token');
+      if (token) {
+        window.location.href = './dashboard.html';
+        return;
+      }
+      openModal();
+    });
+
+И удали старую строку:
+
+    openLoginModal?.addEventListener('click', openModal);
